@@ -2,6 +2,7 @@ import { signinInput, signupInput } from "@parikshit45/medium-blog";
 import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
 import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { decode, sign, verify } from 'hono/jwt'
 
 
@@ -12,6 +13,16 @@ const userApp = new Hono<{
         JWT_SECRET_KEY: string
     }
 }>();
+
+
+userApp.get('/', async (c) => {
+    const prisma = new PrismaClient({
+        datasourceUrl: c.env.DATABASE_URL
+    }).$extends(withAccelerate())
+    const users = await prisma.user.findMany();
+    return c.json(users);
+})
+
 
 userApp.post('/signup', async (c) => {
     const prisma = new PrismaClient({
@@ -25,22 +36,20 @@ userApp.post('/signup', async (c) => {
     const secretKey = c.env.JWT_SECRET_KEY;
 
     if (!success) {
-        c.status(403);
-        return c.json({
-            message: "Invalid inputs"
-        })
+        throw new HTTPException(403, { message: 'Invalid inputs' })
+
     }
 
     const user = await prisma.user.create({
         data: {
             email: body.email,
-            password: body.password
+            password: body.password,
+            username: body.username
         }
     })
 
     if (!user) {
-        c.status(403);
-        return c.json({ error: "user not found" })
+        throw new HTTPException(403, { message: 'user not found' })
     }
 
     const token = await sign(
@@ -64,10 +73,9 @@ userApp.post('/signin', async (c) => {
     const { success } = signinInput.safeParse(body);
 
     if (!success) {
-        c.status(403);
-        return c.json({
-            message: "Invalid inputs"
-        })
+        throw new HTTPException(403, { message: 'Invalid inputs' })
+
+
     }
 
 
@@ -79,8 +87,7 @@ userApp.post('/signin', async (c) => {
     })
 
     if (!user) {
-        c.status(403);
-        return c.json({ error: "user not found" })
+        throw new HTTPException(403, { message: 'user not found' })
     }
 
 

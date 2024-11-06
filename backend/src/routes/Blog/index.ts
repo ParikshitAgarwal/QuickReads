@@ -2,6 +2,7 @@ import { createBlogInput, updateBlogInput } from "@parikshit45/medium-blog";
 import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
 import { Hono } from "hono"
+import { createMiddleware } from "hono/factory";
 import { verify } from "hono/jwt";
 type Variables = {
   userId: string
@@ -14,7 +15,7 @@ const blogApp = new Hono<{
   }
 }>()
 
-blogApp.use('/*', async (c, next) => {
+const headerMiddleWare = createMiddleware(async (c, next) => {
   const header = c.req.header('authorization') || '';
 
   const token = header.split(" ")[1];
@@ -33,7 +34,11 @@ blogApp.use('/*', async (c, next) => {
   }
 })
 
-blogApp.post('/', async (c) => {
+// blogApp.use('/*', async (c, next) => {
+
+// })
+
+blogApp.post('/', headerMiddleWare, async (c) => {
   const prisma = new PrismaClient(
     { datasourceUrl: c.env.DATABASE_URL }
   ).$extends(withAccelerate())
@@ -55,9 +60,10 @@ blogApp.post('/', async (c) => {
       data: {
         title: body.title,
         content: body.content,
-        // published: body.published,
+        contentDesc: body.contentDesc,
+        publishedDate: new Date(),
         authorId: userId
-      }
+      },
     })
     console.log(post)
 
@@ -76,7 +82,7 @@ blogApp.post('/', async (c) => {
   }
 })
 
-blogApp.put('/', async (c) => {
+blogApp.put('/', headerMiddleWare, async (c) => {
   const body = await c.req.json();
   const prisma = new PrismaClient({
     datasourceUrl: c.env.DATABASE_URL
@@ -97,7 +103,8 @@ blogApp.put('/', async (c) => {
       },
       data: {
         title: body.title,
-        content: body.content
+        content: body.content,
+        contentDesc: body.contentDesc
       }
     })
     return c.json({
@@ -122,9 +129,22 @@ blogApp.get('/bulk', async (c) => {
   }).$extends(withAccelerate())
 
   try {
-    const posts = await prisma.post.findMany()
+    const posts = await prisma.post.findMany({
+      select: {
+        content: true,
+        title: true,
+        id: true,
+        publishedDate: true,
+        contentDesc: true,
+        author: {
+          select: {
+            username: true
+          }
+        }
+      }
+    })
     // console.log(posts)
-    return c.json({ posts })
+    return c.json(posts)
   } catch (error) {
     c.status(403);
     console.log(error);
@@ -144,12 +164,41 @@ blogApp.get('/:id', async (c) => {
     const post = await prisma.post.findUnique({
       where: {
         id: Number(id)
+      },
+      select: {
+        content: true,
+        title: true,
+        id: true,
+        publishedDate: true,
+        author: {
+          select: {
+            username: true
+          }
+        }
       }
     })
 
     return c.json(post)
 
 
+  } catch (error) {
+    c.status(403);
+    return c.json({
+      message: "Something went wrong please try again"
+    })
+  }
+})
+
+blogApp.delete('/', async (c) => {
+  const id = c.req.param('id');
+
+  const prisma = new PrismaClient({
+    datasourceUrl: c.env.DATABASE_URL
+  }).$extends(withAccelerate())
+
+  try {
+    await prisma.post.deleteMany();
+    return c.text("post deleted")
   } catch (error) {
     c.status(403);
     return c.json({
