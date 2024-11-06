@@ -1,6 +1,5 @@
 import { FaEllipsis, FaRegBookmark } from "react-icons/fa6"
 import { Link } from "react-router-dom"
-import parse from 'html-react-parser';
 
 interface BlogCardProps {
     authorName: string,
@@ -12,7 +11,7 @@ interface BlogCardProps {
     contentDesc: string
 }
 
-const BlogCard = ({ authorName, publishedDate, title, image, id, contentDesc }: BlogCardProps) => {
+const BlogCard = ({ authorName, publishedDate, title, id, contentDesc }: BlogCardProps) => {
     return (
         <Link to={`/blog/${id}`}>
             <div className="bg-white w-full h-[420px] sm:h-80 flex flex-col-reverse sm:flex-row justify-between items-center py-10 px-5 sm:px-10  shadow-xl rounded-lg">
@@ -53,7 +52,7 @@ const BlogCard = ({ authorName, publishedDate, title, image, id, contentDesc }: 
 
                 </div>
                 <div className="px-5">
-                    <img src='https://pipedream.com/s.v0/app_RphvpG/logo/orig' className="w-1/2 object-cover sm:w-60 sm:h-52 my-1 sm:my-2 mx-auto" />
+                    <img src='https://community.softr.io/uploads/db9110/original/2X/7/74e6e7e382d0ff5d7773ca9a87e6f6f8817a68a6.jpeg' className="w-1/2 object-cover sm:w-60 sm:h-52 my-1 sm:my-2 mx-auto" />
                 </div>
             </div>
         </Link>

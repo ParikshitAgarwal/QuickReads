@@ -1,7 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useBlog } from "../hooks";
 import BlogView from "../components/BlogView";
-import AppBar from "../components/AppBar";
 import BlogViewSkeleton from "../components/BlogViewSkeleton";
 
 const Blog = () => {
